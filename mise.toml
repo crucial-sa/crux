@@ -1,0 +1,11 @@
+[tools]
+go = "1.26.3"
+"go:github.com/spf13/cobra-cli" = "latest"
+
+[tasks.dev]
+description = "Compile and run a non-production build of crux"
+run = "go run main.go"
+
+[tasks.gen-cmd]
+description = "Generate a new command"
+run = "cobra-cli add"
