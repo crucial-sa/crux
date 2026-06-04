@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 
+	"github.com/crucial-sa/crux/internal/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +22,9 @@ to quickly create a Cobra application.`,
 }
 
 func Execute() {
+	logger.Init(os.Getenv("DEBUG") == "1")
+	defer logger.Sync()
+
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)

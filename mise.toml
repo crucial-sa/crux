@@ -1,3 +1,6 @@
+[env]
+_.file = '.env'
+
 [tools]
 go = "1.26.3"
 "go:github.com/spf13/cobra-cli" = "latest"
@@ -5,6 +8,15 @@ go = "1.26.3"
 [tasks.dev]
 description = "Compile and run a non-production build of crux"
 run = "go run main.go"
+
+
+[tasks.fmt]
+description = "Compile and run a non-production build of crux"
+run = """
+go mod tidy
+go fmt
+"""
+
 
 [tasks.gen-cmd]
 description = "Generate a new command"
