@@ -99,7 +99,7 @@ func Authenticate(ctx context.Context) (*Session, error) {
 			return
 		}
 
-		_, err := fmt.Fprintln(w, "Login successful - you can close this tab and return to the terminal.")
+		_, err := fmt.Fprintln(w, "Login successful - you may close this tab and return to the terminal.")
 		if err != nil {
 			resultChan <- browserResult{err: fmt.Errorf("failed to write to response writer")}
 			return

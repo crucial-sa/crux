@@ -149,20 +149,20 @@ func exchangeRefreshToken(refreshToken string) (*Session, error) {
 	formData.Set("client_id", clientID)
 	res, err := http.PostForm(fmt.Sprintf("%s/auth/v1/oauth/token", authorizationURL), formData)
 	if err != nil {
-		panic("Failed to exchange refresh token")
+		return nil, err
 	}
 
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		panic("Failed to exchange code")
+		return nil, fmt.Errorf("server responded with a non ok status code")
 	}
 
 	data, _ := io.ReadAll(res.Body)
 
 	session, err := parseSecret(string(data))
 	if err != nil {
-		panic("Failed to decode session response")
+		return nil, err
 	}
 
 	return session, nil
