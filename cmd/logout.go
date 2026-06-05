@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/crucial-sa/crux/internal/auth"
 	"github.com/crucial-sa/crux/internal/ui"
 	"github.com/spf13/cobra"
@@ -12,13 +10,19 @@ var logoutCmd = &cobra.Command{
 	Use:   "logout",
 	Short: "Logout of the current logged in user",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := auth.ClearSecret()
+		secret, err := auth.GetSecret()
 		if err != nil {
-			fmt.Printf("Failed to clear secret")
-			return
+			ui.Panic("Failed to check login status", err)
 		}
 
-		ui.Say("Logged in successfully!")
+		if secret != "" {
+			err := auth.ClearSecret()
+			if err != nil {
+				ui.Panic("Failed to clear secret", err)
+			}
+		}
+
+		ui.Say("Logged out successfully!")
 	},
 }
 

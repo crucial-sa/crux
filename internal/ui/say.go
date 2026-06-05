@@ -1,7 +1,10 @@
 package ui
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
-func Say(message string) {
-	fmt.Printf("* %s", message)
+func Say(message ...string) {
+	fmt.Printf("%s\n", strings.Join(message, ""))
 }

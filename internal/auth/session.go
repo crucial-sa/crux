@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,21 +11,50 @@ import (
 	"os"
 
 	"github.com/crucial-sa/crux/internal/logger"
+	"github.com/crucial-sa/crux/internal/ui"
 	"github.com/lestrrat-go/jwx/v4/jwt"
 	"go.uber.org/zap"
 )
 
-func Login(ctx context.Context) (*Session, error) {
+var (
+	ErrNoSession      = errors.New("no stored session found")
+	ErrExpiredSession = errors.New("currently stored session is expired")
+)
+
+func CheckAndPromptLogin(ctx context.Context) bool {
+	_, err := GetSession(ctx)
+	if err != nil {
+		if errors.Is(err, ErrNoSession) ||
+			errors.Is(err, ErrExpiredSession) {
+			confirmed := ui.Confirm("You are currently not logged in, do you want to login?")
+
+			if !confirmed {
+				return false
+			}
+
+			_, err = InitiateLogin(ctx)
+			if err != nil {
+				ui.Panic("Failed to login", err)
+			}
+		} else {
+			ui.Panic("Failed to check session", err)
+		}
+	}
+
+	return true
+}
+
+func GetSession(ctx context.Context) (*Session, error) {
 	secret, err := GetSecret()
 	if err != nil || secret == "" {
-		logger.Zap.Debug("secret was not found, initiating login...", zap.String("secret", secret), zap.Error(err))
-		return initiateLogin(ctx)
+		logger.Zap.Debug("secret was not found", zap.String("secret", secret), zap.Error(err))
+		return nil, ErrNoSession
 	}
 
 	session, err := parseSecret(secret)
 	if err != nil {
-		logger.Zap.Debug("Failed to parse session, initiating login...", zap.Error(err))
-		return initiateLogin(ctx)
+		logger.Zap.Debug("Failed to parse session", zap.Error(err))
+		return nil, err
 	}
 
 	sessionValid := isAccessTokenValid(ctx, session.AccessToken)
@@ -34,16 +64,15 @@ func Login(ctx context.Context) (*Session, error) {
 
 		session, err := exchangeRefreshToken(session.RefreshToken)
 		if err != nil {
-			logger.Zap.Debug("Failed to exchange refresh token, initiating login...", zap.Error(err))
-			return initiateLogin(ctx)
+			logger.Zap.Debug("Failed to exchange refresh token", zap.Error(err))
+			return nil, ErrExpiredSession
 		}
 
 		logger.Zap.Debug("Refresh token was exchanged for a new session!")
 
 		err = storeSession(session)
 		if err != nil {
-			logger.Zap.Debug("Failed to store session")
-			return initiateLogin(ctx)
+			return nil, err
 		}
 
 		return session, nil
@@ -54,7 +83,16 @@ func Login(ctx context.Context) (*Session, error) {
 	return session, nil
 }
 
-func initiateLogin(ctx context.Context) (*Session, error) {
+func Login(ctx context.Context) (*Session, error) {
+	session, err := GetSession(ctx)
+	if err != nil {
+		return InitiateLogin(ctx)
+	}
+
+	return session, nil
+}
+
+func InitiateLogin(ctx context.Context) (*Session, error) {
 	session, err := Authenticate(ctx)
 	if err != nil {
 		return nil, err

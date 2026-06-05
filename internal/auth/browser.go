@@ -15,6 +15,8 @@ import (
 	"os/exec"
 	"runtime"
 	"time"
+
+	"github.com/crucial-sa/crux/internal/ui"
 )
 
 type browserResult struct {
@@ -112,55 +114,70 @@ func Authenticate(ctx context.Context) (*Session, error) {
 
 	authorizationURL := fmt.Sprintf("%s/auth/v1/oauth/authorize?response_type=code&client_id=%s&redirect_uri=%s&code_challenge=%v&state=%v&nonce=%s&code_challenge_method=S256", authBaseURL, clientID, redirectURI, codeChallenge, state, nonce)
 
+	ui.Say("Opening your browser to authenticate.")
+
 	switch runtime.GOOS {
 	case "darwin":
-		exec.Command("open", authorizationURL).Start()
+		err = exec.Command("open", authorizationURL).Start()
 	case "windows":
-		exec.Command("rundll32", "url.dll,FileProtocolHandler", authorizationURL).Start()
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", authorizationURL).Start()
 	default:
-		exec.Command("xdg-open", authorizationURL).Start()
+		err = exec.Command("xdg-open", authorizationURL).Start()
 	}
 
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case <-time.After(5 * time.Minute):
-		return nil, fmt.Errorf("auth: timed out waiting for browser login")
-	case res := <-resultChan:
-		if res.err != nil {
-			return nil, res.err
-		}
-
-		formData := url.Values{}
-		formData.Set("grant_type", "authorization_code")
-		formData.Set("code", res.code)
-		formData.Set("client_id", clientID)
-		formData.Set("redirect_uri", redirectURI)
-		formData.Set("code_verifier", codeVerifier)
-
-		exchangeRes, err := http.PostForm(
-			fmt.Sprintf("%s/auth/v1/oauth/token", authBaseURL), formData,
-		)
-		if err != nil {
-			panic("Failed to exchange code")
-		}
-
-		defer exchangeRes.Body.Close()
-
-		if exchangeRes.StatusCode != http.StatusOK {
-			panic("Failed to exchange code")
-		}
-		data, _ := io.ReadAll(exchangeRes.Body)
-
-		var session Session
-
-		err = json.Unmarshal(data, &session)
-		if err != nil {
-			panic("Failed to decode session response")
-		}
-
-		return &session, nil
+	if err != nil {
+		ui.Say("\nCould not open your default browser, visit the following url to authenticate:\n")
+	} else {
+		ui.Say("\nBrowser didn't open? You can manually visit the following url:\n")
 	}
+	ui.Say(authorizationURL, "\n")
+
+	var session *Session
+
+	err = ui.Spinner("Waiting for authentication", ctx, func(ctx context.Context) error {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(5 * time.Minute):
+			return fmt.Errorf("timed out waiting for browser login")
+		case res := <-resultChan:
+			if res.err != nil {
+				return res.err
+			}
+
+			formData := url.Values{}
+			formData.Set("grant_type", "authorization_code")
+			formData.Set("code", res.code)
+			formData.Set("client_id", clientID)
+			formData.Set("redirect_uri", redirectURI)
+			formData.Set("code_verifier", codeVerifier)
+
+			exchangeRes, err := http.PostForm(
+				fmt.Sprintf("%s/auth/v1/oauth/token", authBaseURL), formData,
+			)
+			if err != nil {
+				return err
+			}
+
+			defer exchangeRes.Body.Close()
+
+			if exchangeRes.StatusCode != http.StatusOK {
+				return fmt.Errorf("failed to exchange code")
+			}
+			data, _ := io.ReadAll(exchangeRes.Body)
+
+			if err := json.Unmarshal(data, &session); err != nil {
+				return err
+			}
+
+			return nil
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return session, nil
 }
 
 func generateCodeVerifier() (string, error) {

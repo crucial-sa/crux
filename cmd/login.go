@@ -14,7 +14,7 @@ var loginCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		_, err := auth.Login(context.Background())
 		if err != nil {
-			panic(err)
+			ui.Panic("Failed to login", err)
 		}
 
 		ui.Say("Logged in successfully!")
