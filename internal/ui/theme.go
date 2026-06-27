@@ -54,7 +54,7 @@ func formStyles(isDark bool) *huh.Styles {
 
 	// Buttons
 	t.Focused.FocusedButton = t.Focused.FocusedButton.Foreground(colorOnAccnt).Background(colorAccent).Bold(true)
-	t.Focused.BlurredButton = t.Focused.BlurredButton.Foreground(colorFg2).Background(colorBorder)
+	t.Focused.BlurredButton = t.Focused.BlurredButton.Foreground(colorFg2).Background(lipgloss.NoColor{})
 	t.Focused.Next = t.Focused.FocusedButton
 
 	// Text input.
