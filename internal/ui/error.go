@@ -13,7 +13,7 @@ var style = lipgloss.NewStyle().
 
 var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.Red)
 
-var helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
+var helpStyle = lipgloss.NewStyle().Foreground(lipgloss.BrightBlack)
 
 func Error(message string, err error) {
 	lipgloss.Println(style.Render("ERROR:", message))

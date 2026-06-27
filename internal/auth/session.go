@@ -21,18 +21,18 @@ var (
 	ErrExpiredSession = errors.New("currently stored session is expired")
 )
 
-func CheckAndPromptLogin(ctx context.Context) bool {
-	_, err := GetSession(ctx)
+func CheckAndPromptLogin(ctx context.Context) (*Session, bool) {
+	session, err := GetSession(ctx)
 	if err != nil {
 		if errors.Is(err, ErrNoSession) ||
 			errors.Is(err, ErrExpiredSession) {
 			confirmed := ui.Confirm("You are currently not logged in, do you want to login?")
 
 			if !confirmed {
-				return false
+				return session, false
 			}
 
-			_, err = InitiateLogin(ctx)
+			session, err = InitiateLogin(ctx)
 			if err != nil {
 				ui.Panic("Failed to login", err)
 			}
@@ -41,7 +41,7 @@ func CheckAndPromptLogin(ctx context.Context) bool {
 		}
 	}
 
-	return true
+	return session, true
 }
 
 func GetSession(ctx context.Context) (*Session, error) {

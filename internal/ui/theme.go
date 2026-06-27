@@ -1,20 +1,22 @@
 package ui
 
 import (
+	"image/color"
+
 	"charm.land/huh/v2"
 	"charm.land/huh/v2/spinner"
 	"charm.land/lipgloss/v2"
 )
 
 var (
-	colorFg1     = lipgloss.Color("#FAFAFB") // --ink-fg     primary text
-	colorFg2     = lipgloss.Color("#B4B5BB") // --ink-fg-2   secondary text
-	colorFg3     = lipgloss.Color("#7A7B83") // --ink-fg-3   descriptions / help
-	colorMuted   = lipgloss.Color("#5A5B62") // placeholder, disabled, prefixes
-	colorBorder  = lipgloss.Color("#1F2026") // --ink-surface-3
-	colorAccent  = lipgloss.Color("#2D54FF") // --cobalt      CTAs, focus, selectors
-	colorOnAccnt = lipgloss.Color("#0A0B0E") // --ink         text on cobalt fill
-	colorRose    = lipgloss.Color("#EF4444") // --rose        errors
+	colorFg1     color.Color = lipgloss.NoColor{}
+	colorFg2     color.Color = lipgloss.BrightBlack
+	colorFg3     color.Color = lipgloss.BrightBlack
+	colorMuted   color.Color = lipgloss.BrightBlack
+	colorBorder  color.Color = lipgloss.BrightBlack
+	colorAccent  color.Color = lipgloss.Blue
+	colorOnAccnt color.Color = lipgloss.BrightWhite
+	colorRose    color.Color = lipgloss.Red
 )
 
 func Theme() huh.Theme {
